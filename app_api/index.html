@@ -20,10 +20,6 @@
             </header>
 
             <div class="content-area padding-area" style="padding-bottom: 80px;">
-                <div class="radio-group" style="margin-bottom: 16px;">
-                    <label><input type="radio" name="charCount" value="1" checked> 1人</label>
-                    <label><input type="radio" name="charCount" value="multi"> 複数人</label>
-                </div>
 
                 <div class="setting-block">
                     <h3>共通設定</h3>
@@ -41,7 +37,7 @@
                     </div>
                 </div>
 
-                <button id="btn-add-char" class="secondary-btn full-width margin-top" style="display: none;">＋ 人数を追加</button>
+                <button id="btn-add-char" class="secondary-btn full-width margin-top">＋ キャラを追加</button>
 
                 <label style="margin-top: 24px;">構築されたプロンプト (ポジティブ / 編集可能)</label>
                 <textarea id="combined-prompt-preview" rows="5" placeholder="ポジティブな設定がここに結合されます..."></textarea>
@@ -66,7 +62,10 @@
                         <textarea id="english-negative-output" class="prompt-output-text" rows="3" style="background: transparent; border: none; outline: none; resize: vertical; color: inherit; font-family: inherit;"></textarea>
                         <button id="btn-copy-negative" class="icon-btn copy-btn" title="コピー">📋</button>
                     </div>
-                    
+                    <div style="margin-top: 16px;">
+                        <label>履歴のタイトル (編集可能)</label>
+                        <input type="text" id="history-title-input" placeholder="AIが案を出します...">
+                    </div>
                     <button id="btn-add-to-history" class="primary-btn full-width margin-top">💾 履歴に追加</button>
                 </div>
             </div>
@@ -125,8 +124,10 @@
                     <textarea id="edit-negative" rows="3"></textarea>
                 </div>
 
-                <button id="btn-save-item" class="primary-btn full-width margin-top">保存</button>
-                <button id="btn-delete-item" class="danger-btn full-width margin-top" style="display: none;">削除</button>
+                <div class="layout-row margin-top">
+                    <button id="btn-save-item" class="primary-btn">保存</button>
+                    <button id="btn-delete-item" class="danger-btn" style="display: none;">削除</button>
+                </div>
             </div>
         </div>
 

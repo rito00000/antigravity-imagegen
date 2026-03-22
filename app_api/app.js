@@ -160,17 +160,6 @@ function showView(viewName) {
 // ============================================================
 
 function initMainScreen() {
-    // 人数切り替えラジオボタン
-    const radios = document.getElementsByName('charCount');
-    radios.forEach(r => {
-        r.addEventListener('change', (e) => {
-            AppState.isMultiChar = (e.target.value === 'multi');
-            document.getElementById('btn-add-char').style.display = AppState.isMultiChar ? 'block' : 'none';
-            renderCharacterBlocks();
-            updateCombinedPromptPreview();
-        });
-    });
-
     document.getElementById('btn-add-char').onclick = () => {
         if (AppState.currentSelection.chars.length >= 10) return; // 上限フェイルセーフ
         AppState.currentSelection.chars.push({ character: null, clothing: null });
@@ -183,9 +172,6 @@ function initMainScreen() {
             quality: null, style: null, scene: null, pose: null,
             chars: [ { character: null, clothing: null } ]
         };
-        document.querySelector('input[name="charCount"][value="1"]').checked = true;
-        AppState.isMultiChar = false;
-        document.getElementById('btn-add-char').style.display = 'none';
         
         renderCharacterBlocks();
         updateMainScreenButtons();
@@ -205,6 +191,7 @@ function initMainScreen() {
 function addToHistory() {
     const posText = document.getElementById('english-prompt-output').value.trim();
     const negText = document.getElementById('english-negative-output').value.trim();
+    const titleText = document.getElementById('history-title-input').value.trim() || '名称未設定';
 
     if (!posText && !negText) {
         alert('出力されたプロンプトが空だ。履歴に追加するものが無い。');
@@ -215,6 +202,7 @@ function addToHistory() {
     const historyItem = {
         id: generateId(),
         timestamp: new Date().toISOString(),
+        title: titleText,
         pos: posText,
         neg: negText
     };
@@ -243,11 +231,6 @@ function addToHistory() {
 function renderCharacterBlocks() {
     const container = document.getElementById('character-blocks-container');
     container.innerHTML = '';
-
-    // 1人の場合、配列を1つに切り詰める
-    if (!AppState.isMultiChar) {
-        AppState.currentSelection.chars = [AppState.currentSelection.chars[0]];
-    }
 
     AppState.currentSelection.chars.forEach((charSel, index) => {
         const div = document.createElement('div');
@@ -298,6 +281,7 @@ function bindSelectButtons() {
 function updateMainScreenButtons() {
     const getTitle = (type, id) => {
         if (!id) return null;
+        if (type === 'clothing' && id === 'basic_clothes') return '🌟 基本衣装 (追加タグなし)';
         const item = AppState.categories[type].find(i => i.id === id);
         return item ? item.title : null;
     };
@@ -335,9 +319,9 @@ function updateCombinedPromptPreview() {
         const item = AppState.categories[type].find(i => i.id === id);
         if (!item) return;
 
+        // characterのcharClothesは手動で制御するためここではcharBaseのみ
         if (type === 'character') {
             if (item.charBase) targetArray.push(item.charBase);
-            if (item.charClothes) targetArray.push(item.charClothes);
         } else {
             if (item.prompt) targetArray.push(item.prompt);
         }
@@ -359,7 +343,14 @@ function updateCombinedPromptPreview() {
     AppState.currentSelection.chars.forEach((charSel, index) => {
         let charPos = [];
         addParts('character', charSel.character, charPos);
-        addParts('clothing', charSel.clothing, charPos);
+        
+        if (charSel.clothing === 'basic_clothes') {
+            // 基本衣装の場合はcharacterのcharClothesを引っ張ってくる
+            const cItem = AppState.categories.character.find(i => i.id === charSel.character);
+            if (cItem && cItem.charClothes) charPos.push(cItem.charClothes);
+        } else {
+            addParts('clothing', charSel.clothing, charPos);
+        }
         
         if (charPos.length > 0) {
             posResult += `#${index + 1}人目\n${charPos.join(', ')} , BREAK, \n\n`;
@@ -389,10 +380,15 @@ function openSelectionModal(type, charIdx) {
     const list = document.getElementById('selection-list');
     list.innerHTML = '';
 
-    if (AppState.categories[type].length === 0) {
+    let itemsToRender = AppState.categories[type];
+    if (type === 'clothing') {
+        itemsToRender = [{ id: 'basic_clothes', title: '🌟 基本衣装 (タグ追加なし)', prompt: '(キャラ設定の基本衣装が適用されます)' }, ...itemsToRender];
+    }
+
+    if (itemsToRender.length === 0) {
         list.innerHTML = '<li style="padding: 20px; text-align: center; color: var(--text-secondary);">まだ登録されていない。</li>';
     } else {
-        AppState.categories[type].forEach(item => {
+        itemsToRender.forEach(item => {
             const li = document.createElement('li');
             li.className = 'list-item';
             
@@ -452,6 +448,7 @@ document.getElementById('btn-generate-english').onclick = async () => {
         const systemPrompt = `あなたはPixAI（Danbooruタグベースのアニメ系画像生成AI）の熟練プロンプトエンジニアだ。ユーザーの入力から、AIが最も理解しやすいカンマ区切りの英語タグに変換しろ。
 余計な説明は一切出力するな。必ず以下のJSONフォーマットのみで出力しろ。
 {
+  "title": "このプロンプトの内容を端的に表す日本語のタイトル（15文字以内）",
   "positive": "英語に変換されたポジティブタグ",
   "negative": "英語に変換されたネガティブタグ（入力に無ければ空文字）"
 }`;
@@ -468,11 +465,12 @@ document.getElementById('btn-generate-english').onclick = async () => {
         const data = await response.json();
         const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
         
-        let parsed = { positive: "生成エラー", negative: "" };
+        let parsed = { title: "名称未設定", positive: "生成エラー", negative: "" };
         try { let cleanJson = rawText.replace(/^```json\n|^```\n|```$/gm, '').trim(); parsed = JSON.parse(cleanJson); }
         catch (e) { parsed.positive = rawText; }
 
         outPosTextarea.value = parsed.positive; outNegTextarea.value = parsed.negative;
+        document.getElementById('history-title-input').value = parsed.title || "";
         outPosTextarea.disabled = false; outNegTextarea.disabled = false;
         // 自動で履歴には追加しない。ユーザーの意志で保存させる。
 
@@ -534,7 +532,7 @@ function renderManageList() {
     if (items.length === 0) { list.innerHTML = '<li style="padding: 20px; text-align: center; color: var(--text-secondary);">データが空だ。</li>'; return; }
     items.forEach(item => {
         const li = document.createElement('li'); li.className = 'list-item';
-        li.innerHTML = `<span class="list-item-title">${escapeHtml(item.title)}</span><span class="list-item-sub">タップして編集...</span>`;
+        li.innerHTML = `<span class="list-item-title" style="margin-bottom:0; font-size:1rem;">${escapeHtml(item.title)}</span>`;
         li.onclick = () => openEditModal(item.id);
         list.appendChild(li);
     });
@@ -605,7 +603,7 @@ function renderHistoryList() {
         li.className = 'history-item item-list-no-active';
 
         li.innerHTML = `
-            <div class="history-item-time">${escapeHtml(formatTimestamp(item.timestamp))}</div>
+            <div class="history-item-time">${escapeHtml(formatTimestamp(item.timestamp))} <strong style="color:var(--accent-color); margin-left:8px;">${escapeHtml(item.title || '無題')}</strong></div>
             <div class="history-item-delete icon-btn" data-id="${item.id}" title="この履歴を削除">✖</div>
             
             <div class="history-item-pos-area">

@@ -85,12 +85,22 @@ label:first-child { margin-top: 0; }
 .list-item { padding: 14px 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; cursor: pointer; background: rgba(30, 30, 30, 0.75); }
 .list-item:active { background-color: var(--surface-color-alt); }
 .list-item-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; color: var(--accent-color); }
-.list-item-sub { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.list-item-sub { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; display: -webkit-box; line-clamp: 2; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* 英語出力ボックス */
 .prompt-output-box { display: flex; gap: 8px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-top: 6px; align-items: flex-start; }
 .prompt-output-text { flex-grow: 1; font-size: 0.85rem; line-height: 1.4; white-space: pre-wrap; word-break: break-all; min-height: 50px; font-family: monospace; }
 .copy-btn { width: 40px; height: 40px; background: var(--accent-color); color: #000; border-radius: 8px; flex-shrink: 0; margin-top: 2px; }
+
+/* 汎用レイアウト */
+.layout-row { display: flex; gap: 8px; width: 100%; }
+.layout-row > * { flex: 1; }
+
+/* 編集モーダルのフィールド引き伸ばし */
+#edit-modal .content-area { display: flex; flex-direction: column; }
+.edit-field-group { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.edit-field-group textarea { flex: 1; min-height: 120px; }
+
 
 /* ============================================================ */
 /* 履歴用リストアイテム専用スタイル (Regi's Tuning) */
@@ -151,13 +161,15 @@ label:first-child { margin-top: 0; }
     padding: 8px;
     border-radius: 6px;
     border: 1px solid var(--border-color);
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2; /* 2行で省略 */
-    -webkit-box-orient: vertical;
+    overflow-y: auto;
+    max-height: 120px;
+    display: block;
     font-family: monospace;
     word-break: break-all;
+    scrollbar-width: thin;
 }
+.history-item-text::-webkit-scrollbar { width: 6px; }
+.history-item-text::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
 
 .history-copy-btn-pos { grid-area: btn-pos; }
 .history-copy-btn-neg { grid-area: btn-neg; }
