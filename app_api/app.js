@@ -541,9 +541,16 @@ function renderManageList() {
 document.getElementById('btn-add-item').onclick = () => openEditModal(null);
 
 function openEditModal(id) {
-    currentEditId = id; const isChar = (currentManageType === 'character');
-    document.getElementById('field-prompt').style.display = isChar ? 'none' : 'block';
-    document.getElementById('field-char-base').style.display = isChar ? 'block' : 'none';
+    currentEditId = id; 
+    const isChar = (currentManageType === 'character');
+    
+    // --- 画面を縦いっぱいに広げるためのflex制御 ---
+    document.getElementById('field-prompt').style.display = isChar ? 'none' : 'flex';
+    document.getElementById('field-char-base').style.display = isChar ? 'flex' : 'none';
+    
+    // 悪さをしていたネガティブ枠の動的制御(flex-growを0にする処理)を削除した。
+    // CSS側で常に「2:1」の完璧な比率になるよう統制している。
+
     const labelP = document.getElementById('label-prompt');
     if (currentManageType === 'clothing') labelP.textContent = '衣装詳細のプロンプト'; else labelP.textContent = 'プロンプト';
 
@@ -553,11 +560,20 @@ function openEditModal(id) {
         const item = AppState.categories[currentManageType].find(i => i.id === id);
         document.getElementById('edit-title').value = item.title;
         document.getElementById('edit-negative').value = item.negativePrompt || '';
-        if (isChar) { document.getElementById('edit-char-base').value = item.charBase || ''; document.getElementById('edit-char-clothes').value = item.charClothes || ''; }
-        else { document.getElementById('edit-prompt').value = item.prompt || ''; }
+        if (isChar) { 
+            document.getElementById('edit-char-base').value = item.charBase || ''; 
+            document.getElementById('edit-char-clothes').value = item.charClothes || ''; 
+        } else { 
+            document.getElementById('edit-prompt').value = item.prompt || ''; 
+        }
     } else {
-        document.getElementById('edit-modal-title').textContent = '新規追加'; document.getElementById('btn-delete-item').style.display = 'none';
-        document.getElementById('edit-title').value = ''; document.getElementById('edit-negative').value = ''; document.getElementById('edit-prompt').value = ''; document.getElementById('edit-char-base').value = ''; document.getElementById('edit-char-clothes').value = '';
+        document.getElementById('edit-modal-title').textContent = '新規追加'; 
+        document.getElementById('btn-delete-item').style.display = 'none';
+        document.getElementById('edit-title').value = ''; 
+        document.getElementById('edit-negative').value = ''; 
+        document.getElementById('edit-prompt').value = ''; 
+        document.getElementById('edit-char-base').value = ''; 
+        document.getElementById('edit-char-clothes').value = '';
     }
     showView('editModal');
 }

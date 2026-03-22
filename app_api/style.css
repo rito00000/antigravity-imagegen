@@ -188,3 +188,53 @@ label:first-child { margin-top: 0; }
     background-color: var(--border-color);
     color: var(--accent-color);
 }
+
+/* ============================================================ */
+/* 編集モーダル 入力欄の縦幅拡張 (Regi's Tuning) */
+/* ============================================================ */
+#edit-modal .content-area {
+    display: flex;
+    flex-direction: column;
+}
+
+.edit-field-group {
+    display: flex;
+    flex-direction: column;
+}
+
+#field-prompt {
+    flex-grow: 2; /* 変更：通常プロンプトに「2」の空間を与える */
+    min-height: 80px;
+}
+#field-prompt textarea {
+    flex-grow: 1;
+    resize: none;
+}
+
+#field-char-base {
+    flex-grow: 2; /* 変更なし：キャラ素体+衣装のグループにも「2」の空間 */
+    min-height: 160px;
+}
+#field-char-base textarea {
+    flex-grow: 1;
+    resize: none;
+}
+
+#field-negative {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1 !important; /* 変更：ネガティブ枠に「1」の空間を必ず与える */
+    min-height: 80px; /* 変更：絶対に潰れないように最低高さを保証 */
+}
+#field-negative textarea {
+    flex-grow: 1;
+    resize: none;
+}
+
+/* 固定サイズの要素（タイトルやボタン）が潰れないように保護 */
+#edit-modal label,
+#edit-title,
+#btn-save-item,
+#btn-delete-item {
+    flex-shrink: 0;
+}
