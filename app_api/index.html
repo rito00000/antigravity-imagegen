@@ -33,17 +33,17 @@
                     <button class="select-btn" data-type="pose">ポーズを選択...</button>
                 </div>
 
-                <div id="character-blocks-container">
+				<div id="character-blocks-container">
                     <div class="setting-block char-block" data-index="1">
                         <h3>👤 キャラ 1</h3>
-                        <button class="select-btn" data-type="character">キャラ設定を選択...</button>
-                        <button class="select-btn" data-type="clothing">服装を選択...</button>
+                        <button class="select-btn" data-type="character" data-charidx="0">キャラ設定を選択...</button>
+                        <button class="select-btn" data-type="clothing" data-charidx="0">服装を選択...</button>
                     </div>
                 </div>
 
                 <button id="btn-add-char" class="secondary-btn full-width margin-top" style="display: none;">＋ 人数を追加</button>
 
-				<label style="margin-top: 24px;">構築されたプロンプト (ポジティブ / 編集可能)</label>
+                <label style="margin-top: 24px;">構築されたプロンプト (ポジティブ / 編集可能)</label>
                 <textarea id="combined-prompt-preview" rows="5" placeholder="ポジティブな設定がここに結合されます..."></textarea>
 
                 <label style="margin-top: 16px;">構築されたプロンプト (ネガティブ / 編集可能)</label>
@@ -66,6 +66,8 @@
                         <textarea id="english-negative-output" class="prompt-output-text" rows="3" style="background: transparent; border: none; outline: none; resize: vertical; color: inherit; font-family: inherit;"></textarea>
                         <button id="btn-copy-negative" class="icon-btn copy-btn" title="コピー">📋</button>
                     </div>
+                    
+                    <button id="btn-add-to-history" class="primary-btn full-width margin-top">💾 履歴に追加</button>
                 </div>
             </div>
 
@@ -85,6 +87,9 @@
                 <div class="header-left">
                     <button id="btn-back-from-manage" class="icon-btn">◀</button>
                     <h1 id="manage-header-title">設定管理</h1>
+                </div>
+                <div class="header-right">
+                    <button id="btn-clear-history" class="text-btn danger-color" style="display:none; font-size:0.8rem; font-weight:600;">全削除</button>
                 </div>
             </header>
             <div class="content-area padding-area">
@@ -137,7 +142,7 @@
             </div>
         </div>
 
-		<div id="global-settings-view" class="view modal-view">
+        <div id="global-settings-view" class="view modal-view">
             <header class="app-header modal-header">
                 <h2>アプリ全体設定</h2>
                 <button id="btn-close-global-settings" class="icon-btn">✖</button>
