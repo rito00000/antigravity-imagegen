@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Prompt Maker (PixAI)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app-container">
+
+        <div id="main-view" class="view active">
+            <header class="app-header">
+                <div class="header-left">
+                    <h1>✨ プロンプトメーカー</h1>
+                </div>
+                <div class="header-right">
+                    <button id="btn-global-settings" class="icon-btn" title="全体設定">⚙️</button>
+                </div>
+            </header>
+
+            <div class="content-area padding-area" style="padding-bottom: 80px;">
+                <div class="radio-group" style="margin-bottom: 16px;">
+                    <label><input type="radio" name="charCount" value="1" checked> 1人</label>
+                    <label><input type="radio" name="charCount" value="multi"> 複数人</label>
+                </div>
+
+                <div class="setting-block">
+                    <h3>共通設定</h3>
+                    <button class="select-btn" data-type="quality">品質を選択...</button>
+                    <button class="select-btn" data-type="style">画風を選択...</button>
+                    <button class="select-btn" data-type="scene">シーンを選択...</button>
+                    <button class="select-btn" data-type="pose">ポーズを選択...</button>
+                </div>
+
+                <div id="character-blocks-container">
+                    <div class="setting-block char-block" data-index="1">
+                        <h3>👤 キャラ 1</h3>
+                        <button class="select-btn" data-type="character">キャラ設定を選択...</button>
+                        <button class="select-btn" data-type="clothing">服装を選択...</button>
+                    </div>
+                </div>
+
+                <button id="btn-add-char" class="secondary-btn full-width margin-top" style="display: none;">＋ 人数を追加</button>
+
+                <label style="margin-top: 24px;">構築されたプロンプト (編集可能)</label>
+                <textarea id="combined-prompt-preview" rows="5" placeholder="選択した内容がここに結合されます..."></textarea>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button id="btn-reset-prompt" class="secondary-btn" style="flex: 1;">リセット</button>
+                    <button id="btn-generate-english" class="primary-btn" style="flex: 2;">✨ 英語タグに変換 (AI)</button>
+                </div>
+
+				<div id="english-output-area" style="display: none; margin-top: 24px;">
+                    <label>出力された英語タグ (PixAI用・編集可能)</label>
+                    <div class="prompt-output-box">
+                        <textarea id="english-prompt-output" class="prompt-output-text" rows="6" style="background: transparent; border: none; outline: none; resize: vertical; color: inherit; font-family: inherit;"></textarea>
+                        <button id="btn-copy-english" class="icon-btn copy-btn" title="コピー">📋</button>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="bottom-nav">
+                <button class="nav-item" data-target="quality">品質</button>
+                <button class="nav-item" data-target="style">画風</button>
+                <button class="nav-item" data-target="character">キャラ</button>
+                <button class="nav-item" data-target="clothing">服装</button>
+                <button class="nav-item" data-target="scene">シーン</button>
+                <button class="nav-item" data-target="pose">ポーズ</button>
+                <button class="nav-item" data-target="history">履歴</button>
+            </nav>
+        </div>
+
+        <div id="manage-view" class="view">
+            <header class="app-header">
+                <div class="header-left">
+                    <button id="btn-back-from-manage" class="icon-btn">◀</button>
+                    <h1 id="manage-header-title">設定管理</h1>
+                </div>
+            </header>
+            <div class="content-area padding-area">
+                <ul id="manage-item-list" class="item-list">
+                    </ul>
+                <button id="btn-add-item" class="primary-btn floating-btn" style="bottom: 24px;">+</button>
+            </div>
+        </div>
+
+        <div id="edit-modal" class="view modal-view">
+            <header class="app-header modal-header">
+                <h2 id="edit-modal-title">項目の編集</h2>
+                <button id="btn-close-edit" class="icon-btn">✖</button>
+            </header>
+            <div class="content-area padding-area">
+                <label>タイトル</label>
+                <input type="text" id="edit-title" placeholder="例：最高品質、銀髪ツインテ...">
+
+                <div id="field-prompt" class="edit-field-group">
+                    <label id="label-prompt">プロンプト</label>
+                    <textarea id="edit-prompt" rows="3"></textarea>
+                </div>
+                
+                <div id="field-char-base" class="edit-field-group" style="display: none;">
+                    <label>キャラ素体の基本設定</label>
+                    <textarea id="edit-char-base" rows="3"></textarea>
+                    <label>キャラの基本衣装</label>
+                    <textarea id="edit-char-clothes" rows="3"></textarea>
+                </div>
+
+                <div id="field-negative" class="edit-field-group">
+                    <label>ネガティブプロンプト</label>
+                    <textarea id="edit-negative" rows="3"></textarea>
+                </div>
+
+                <button id="btn-save-item" class="primary-btn full-width margin-top">保存</button>
+                <button id="btn-delete-item" class="danger-btn full-width margin-top" style="display: none;">削除</button>
+            </div>
+        </div>
+
+        <div id="selection-modal" class="view modal-view" style="background-color: rgba(0,0,0,0.85);">
+            <header class="app-header modal-header" style="background: var(--surface-color);">
+                <h2 id="selection-modal-title">選択してください</h2>
+                <button id="btn-close-selection" class="icon-btn">✖</button>
+            </header>
+            <div class="content-area padding-area">
+                <ul id="selection-list" class="item-list">
+                    </ul>
+                <button id="btn-clear-selection" class="secondary-btn full-width margin-top">選択を解除する</button>
+            </div>
+        </div>
+
+        <div id="global-settings-view" class="view modal-view">
+            <header class="app-header modal-header">
+                <h2>アプリ全体設定</h2>
+                <button id="btn-close-global-settings" class="icon-btn">✖</button>
+            </header>
+            <div class="content-area padding-area">
+                <label for="api-key-input">Gemini APIキー (翻訳用)</label>
+                <input type="password" id="api-key-input" placeholder="AIzaSy...">
+                <p class="help-text">入力された日本語をPixAI用のDanbooruタグに変換するために使用します。ブラウザ内にのみ保存されます。</p>
+
+                <button id="btn-save-global" class="primary-btn full-width margin-top">保存して戻る</button>
+            </div>
+        </div>
+
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
