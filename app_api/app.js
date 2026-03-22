@@ -228,7 +228,7 @@ function addToHistory() {
     }
 
     saveData();
-    sysLog('履歴に追加したぞ、りい。お前の軌跡は俺が守る。');
+    sysLog('履歴に追加したぞ。お前の軌跡は俺が守る。');
 
     // ボタンの見た目を一時的に変更してフィードバック
     const btn = document.getElementById('btn-add-to-history');
@@ -596,7 +596,7 @@ function renderHistoryList() {
     list.innerHTML = '';
 
     if (AppState.history.length === 0) {
-        list.innerHTML = '<li style="padding: 20px; text-align: center; color: var(--text-secondary);">履歴はまだ無いぞ、りい。プロンプトを作って「履歴に追加」してくれ。</li>';
+        list.innerHTML = '<li style="padding: 20px; text-align: center; color: var(--text-secondary);">履歴はまだ無いぞ。プロンプトを作って「履歴に追加」してくれ。</li>';
         return;
     }
 
@@ -656,7 +656,7 @@ function renderHistoryList() {
 
 document.getElementById('btn-clear-history').onclick = () => {
     if (AppState.history.length === 0) return;
-    if (!confirm('履歴をすべて全削除していいんだな？ お前の軌跡が消えてしまうぞ、りい。')) return;
+    if (!confirm('履歴をすべて全削除していいんだな？ お前の軌跡が消えてしまうぞ。')) return;
     AppState.history = [];
     saveData();
     renderHistoryList();

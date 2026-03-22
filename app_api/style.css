@@ -115,15 +115,22 @@ label:first-child { margin-top: 0; }
     font-size: 0.8rem;
     color: var(--text-secondary);
     font-family: monospace;
+    align-self: center; /* 行の縦中央にピタリと合わせる */
+    margin-top: 2px;
 }
 
 .history-item-delete {
     grid-area: delete;
     color: var(--danger-color);
-    font-size: 1.1rem;
-    padding: 4px;
-    text-align: right;
+    font-size: 1.3rem;
+    width: 32px !important;  /* 指の押しやすさを保ちつつ、余分な高さを削る */
+    height: 32px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
+    justify-self: end;  /* 右端に綺麗に寄せる */
+    align-self: center; /* 日時と縦のラインを完璧に揃える */
 }
 
 .history-item-label {
