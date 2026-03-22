@@ -43,18 +43,28 @@
 
                 <button id="btn-add-char" class="secondary-btn full-width margin-top" style="display: none;">＋ 人数を追加</button>
 
-                <label style="margin-top: 24px;">構築されたプロンプト (編集可能)</label>
-                <textarea id="combined-prompt-preview" rows="5" placeholder="選択した内容がここに結合されます..."></textarea>
-                <div style="display: flex; gap: 8px; margin-top: 8px;">
+				<label style="margin-top: 24px;">構築されたプロンプト (ポジティブ / 編集可能)</label>
+                <textarea id="combined-prompt-preview" rows="5" placeholder="ポジティブな設定がここに結合されます..."></textarea>
+
+                <label style="margin-top: 16px;">構築されたプロンプト (ネガティブ / 編集可能)</label>
+                <textarea id="combined-negative-preview" rows="3" placeholder="ネガティブな設定がここに結合されます..."></textarea>
+
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
                     <button id="btn-reset-prompt" class="secondary-btn" style="flex: 1;">リセット</button>
                     <button id="btn-generate-english" class="primary-btn" style="flex: 2;">✨ 英語タグに変換 (AI)</button>
                 </div>
 
-				<div id="english-output-area" style="display: none; margin-top: 24px;">
-                    <label>出力された英語タグ (PixAI用・編集可能)</label>
+                <div id="english-output-area" style="display: none; margin-top: 24px;">
+                    <label>出力された英語タグ (ポジティブ / PixAI用)</label>
                     <div class="prompt-output-box">
-                        <textarea id="english-prompt-output" class="prompt-output-text" rows="6" style="background: transparent; border: none; outline: none; resize: vertical; color: inherit; font-family: inherit;"></textarea>
+                        <textarea id="english-prompt-output" class="prompt-output-text" rows="5" style="background: transparent; border: none; outline: none; resize: vertical; color: inherit; font-family: inherit;"></textarea>
                         <button id="btn-copy-english" class="icon-btn copy-btn" title="コピー">📋</button>
+                    </div>
+
+                    <label style="margin-top: 16px;">出力された英語タグ (ネガティブ / PixAI用)</label>
+                    <div class="prompt-output-box">
+                        <textarea id="english-negative-output" class="prompt-output-text" rows="3" style="background: transparent; border: none; outline: none; resize: vertical; color: inherit; font-family: inherit;"></textarea>
+                        <button id="btn-copy-negative" class="icon-btn copy-btn" title="コピー">📋</button>
                     </div>
                 </div>
             </div>
@@ -127,7 +137,7 @@
             </div>
         </div>
 
-        <div id="global-settings-view" class="view modal-view">
+		<div id="global-settings-view" class="view modal-view">
             <header class="app-header modal-header">
                 <h2>アプリ全体設定</h2>
                 <button id="btn-close-global-settings" class="icon-btn">✖</button>
@@ -136,6 +146,24 @@
                 <label for="api-key-input">Gemini APIキー (翻訳用)</label>
                 <input type="password" id="api-key-input" placeholder="AIzaSy...">
                 <p class="help-text">入力された日本語をPixAI用のDanbooruタグに変換するために使用します。ブラウザ内にのみ保存されます。</p>
+
+                <label style="margin-top: 24px;">使用するAIモデル</label>
+                <div class="radio-group" style="padding-bottom:16px; flex-direction: column;">
+                    <label>
+                        <input type="radio" name="modelType" value="select" checked> リストから選択
+                    </label>
+                    <select id="model-select" style="margin-left:24px; width:calc(100% - 24px); box-sizing:border-box; background-color: var(--surface-color); color: var(--text-primary); border: 1px solid var(--border-color); padding: 10px 12px; border-radius: 8px; font-size: 1rem; font-family: inherit;">
+                        <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite Preview (デフォルト)</option>
+                        <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                        <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+                    </select>
+                    <label style="margin-top:10px;">
+                        <input type="radio" name="modelType" value="custom"> 自由入力
+                    </label>
+                    <input type="text" id="model-input" placeholder="モデル名を入力..." style="margin-left:24px; width:calc(100% - 24px); box-sizing:border-box; background-color: var(--surface-color); color: var(--text-primary); border: 1px solid var(--border-color); padding: 10px 12px; border-radius: 8px; font-size: 1rem; font-family: inherit;" disabled>
+                </div>
 
                 <button id="btn-save-global" class="primary-btn full-width margin-top">保存して戻る</button>
             </div>

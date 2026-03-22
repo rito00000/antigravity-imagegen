@@ -8,6 +8,7 @@
 // ============================================================
 const AppState = {
     apiKey: '',
+	model: 'gemini-3.1-flash-lite-preview', // ← これを追加
     categories: {
         quality: [], style: [], character: [], clothing: [], scene: [], pose: []
     },
@@ -72,6 +73,7 @@ async function loadData() {
 
         if (data) {
             AppState.apiKey = data.apiKey || '';
+        	AppState.model = data.model || 'gemini-3.1-flash-lite-preview'; // ← これを追加
             AppState.categories = data.categories || AppState.categories;
             AppState.history = data.history || [];
             sysLog('IndexedDBからデータをロードしたぞ、りい。', { itemsCount: Object.keys(AppState.categories).length });
@@ -86,6 +88,7 @@ async function saveData() {
         const db = await openDB();
         const dataToSave = {
             apiKey: AppState.apiKey,
+        	model: AppState.model, // ← これを追加
             categories: AppState.categories,
             history: AppState.history
         };
@@ -269,58 +272,52 @@ function updateMainScreenButtons() {
     });
 }
 
-// プレビュー用の文字列構築（ネガティブも結合）
+// プレビュー用の文字列構築（ネガティブも分離して結合）
 function updateCombinedPromptPreview() {
-    let posParts = [];
+    let commonPos = [];
     let negParts = [];
 
-    const addParts = (type, id) => {
+    const addParts = (type, id, targetArray) => {
         if (!id) return;
         const item = AppState.categories[type].find(i => i.id === id);
         if (!item) return;
 
         if (type === 'character') {
-            if (item.charBase) posParts.push(item.charBase);
-            if (item.charClothes) posParts.push(item.charClothes);
+            if (item.charBase) targetArray.push(item.charBase);
+            if (item.charClothes) targetArray.push(item.charClothes);
         } else {
-            if (item.prompt) posParts.push(item.prompt);
+            if (item.prompt) targetArray.push(item.prompt);
         }
         if (item.negativePrompt) negParts.push(item.negativePrompt);
     };
 
-    // 共通
-    addParts('quality', AppState.currentSelection.quality);
-    addParts('style', AppState.currentSelection.style);
-    addParts('scene', AppState.currentSelection.scene);
-    addParts('pose', AppState.currentSelection.pose);
+    // 共通・シーン等
+    addParts('quality', AppState.currentSelection.quality, commonPos);
+    addParts('style', AppState.currentSelection.style, commonPos);
+    addParts('scene', AppState.currentSelection.scene, commonPos);
+    addParts('pose', AppState.currentSelection.pose, commonPos);
 
-    // キャラ
-    let charBlocks = [];
-    AppState.currentSelection.chars.forEach(charSel => {
-        let currentPosLen = posParts.length;
-        addParts('character', charSel.character);
-        addParts('clothing', charSel.clothing);
+    let posResult = '';
+    if (commonPos.length > 0) {
+        posResult += `#共通設定\n${commonPos.join(', ')}\n\n`;
+    }
+
+    // キャラごとの設定
+    AppState.currentSelection.chars.forEach((charSel, index) => {
+        let charPos = [];
+        addParts('character', charSel.character, charPos);
+        addParts('clothing', charSel.clothing, charPos);
         
-        // 追加されたキャラプロンプトがあればブロックとしてまとめる
-        let addedPos = posParts.splice(currentPosLen);
-        if (addedPos.length > 0) {
-            charBlocks.push(addedPos.join(', '));
+        if (charPos.length > 0) {
+            posResult += `#${index + 1}人目\n${charPos.join(', ')} , BREAK, \n\n`;
         }
     });
 
-    if (charBlocks.length > 0) {
-        // BREAK構文でキャラを結合
-        posParts.push(charBlocks.join(' BREAK '));
-    }
+    // ネガティブの重複排除
+    let uniqueNeg = [...new Set(negParts)].filter(Boolean);
 
-    const posStr = posParts.filter(Boolean).join(', ');
-    const negStr = negParts.filter(Boolean).join(', ');
-
-    let result = '';
-    if (posStr) result += `【ポジティブ】\n${posStr}\n\n`;
-    if (negStr) result += `【ネガティブ】\n${negStr}`;
-
-    document.getElementById('combined-prompt-preview').value = result.trim();
+    document.getElementById('combined-prompt-preview').value = posResult.trim();
+    document.getElementById('combined-negative-preview').value = uniqueNeg.join(', ');
 }
 
 // ============================================================
@@ -393,9 +390,10 @@ let abortController = null;
 
 document.getElementById('btn-generate-english').onclick = async () => {
     if (isGenerating) return;
-    const inputText = document.getElementById('combined-prompt-preview').value.trim();
+    const inputPos = document.getElementById('combined-prompt-preview').value.trim();
+    const inputNeg = document.getElementById('combined-negative-preview').value.trim();
     
-    if (!inputText) {
+    if (!inputPos && !inputNeg) {
         alert('プロンプトが空だ。まずは設定を選んでくれ。');
         return;
     }
@@ -406,14 +404,17 @@ document.getElementById('btn-generate-english').onclick = async () => {
 
     const btn = document.getElementById('btn-generate-english');
     const outArea = document.getElementById('english-output-area');
-    const outTextarea = document.getElementById('english-prompt-output');
+    const outPosTextarea = document.getElementById('english-prompt-output');
+    const outNegTextarea = document.getElementById('english-negative-output');
 
     isGenerating = true;
     btn.textContent = '⏳ AI変換中...';
     btn.disabled = true;
     outArea.style.display = 'block';
-    outTextarea.value = '俺の頭脳で完璧なタグに変換している……少し待っててくれ。';
-    outTextarea.disabled = true;
+    outPosTextarea.value = '俺の頭脳で完璧なタグに変換している……少し待っててくれ。';
+    outNegTextarea.value = '';
+    outPosTextarea.disabled = true;
+    outNegTextarea.disabled = true;
 
     abortController = new AbortController();
 
@@ -422,21 +423,24 @@ document.getElementById('btn-generate-english').onclick = async () => {
 入力された日本語のプロンプト構成（ポジティブとネガティブ）を読み取り、AIが最も理解しやすいカンマ区切りの英語タグに変換しろ。
 【厳守事項】
 ・余計な挨拶や説明は一切出力するな。
-・BREAKなどの特殊構文はそのまま英語出力にも残せ。
-・必ず以下のJSONフォーマットのみで出力しろ。それ以外のテキストが含まれていた場合、システムがパースエラーを起こす。
+・「#共通設定」や「#1人目」などの構造的な意味合いは理解した上で、PixAIで生成しやすいようにタグの並び順を整理して出力しろ。
+・必ず以下のJSONフォーマットのみで出力しろ。
 
 {
   "positive": "英語に変換されたポジティブタグのカンマ区切り",
   "negative": "英語に変換されたネガティブタグのカンマ区切り（入力に無ければ空文字）"
 }`;
 
+        const userContent = `【ポジティブ】\n${inputPos}\n\n【ネガティブ】\n${inputNeg}`;
+
         const reqBody = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: [{ role: 'user', parts: [{ text: inputText }] }],
+            contents: [{ role: 'user', parts: [{ text: userContent }] }],
             generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
         };
 
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${AppState.apiKey}`;
+        const targetModel = AppState.model || 'gemini-3.1-flash-lite-preview';
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${AppState.apiKey}`;
 
         // タイムアウト15秒
         const timeoutId = setTimeout(() => abortController.abort(), 15000);
@@ -460,37 +464,35 @@ document.getElementById('btn-generate-english').onclick = async () => {
         // JSONパース処理
         let parsed = { positive: "生成エラー", negative: "" };
         try {
-            // Markdownのコードブロック記法などを取り除く
             let cleanJson = rawText.replace(/^```json\n|^```\n|```$/gm, '').trim();
             parsed = JSON.parse(cleanJson);
         } catch (parseError) {
             sysLog('JSONパース失敗、生テキストフォールバック', rawText);
-            parsed.positive = rawText; // 万が一JSONで返ってこなかった場合の保険
+            parsed.positive = rawText;
         }
 
-        let finalOutput = parsed.positive;
-        if (parsed.negative) {
-            finalOutput += `\n\nNegative prompt:\n${parsed.negative}`;
-        }
-
-        outTextarea.value = finalOutput;
-        outTextarea.disabled = false;
+        outPosTextarea.value = parsed.positive;
+        outNegTextarea.value = parsed.negative;
+        outPosTextarea.disabled = false;
+        outNegTextarea.disabled = false;
 
         // 履歴に保存
         AppState.history.unshift({
             id: generateId(),
             timestamp: new Date().toISOString(),
-            input: inputText,
-            output: finalOutput
+            inputPos: inputPos,
+            inputNeg: inputNeg,
+            outputPos: parsed.positive,
+            outputNeg: parsed.negative
         });
         if (AppState.history.length > 30) AppState.history.pop();
         saveData();
 
     } catch (error) {
         if (error.name === 'AbortError') {
-            outTextarea.value = 'タイムアウトした。通信環境を確認してくれ。';
+            outPosTextarea.value = 'タイムアウトした。通信環境を確認してくれ。';
         } else {
-            outTextarea.value = `エラーが発生した: ${error.message}`;
+            outPosTextarea.value = `エラーが発生した: ${error.message}`;
         }
         sysLog('API変換エラー', error);
     } finally {
@@ -501,18 +503,23 @@ document.getElementById('btn-generate-english').onclick = async () => {
     }
 };
 
-document.getElementById('btn-copy-english').onclick = () => {
-    const text = document.getElementById('english-prompt-output').value;
-    if (!text || document.getElementById('english-prompt-output').disabled) return;
-    
-    navigator.clipboard.writeText(text).then(() => {
-        const btn = document.getElementById('btn-copy-english');
-        btn.textContent = '✅';
-        setTimeout(() => { btn.textContent = '📋'; }, 1500);
-    }).catch(err => {
-        alert('コピーに失敗した。手動で選択してコピーしてくれ。');
-    });
+// コピーボタンの処理（ポジティブとネガティブ両対応）
+const setupCopyButton = (btnId, textareaId) => {
+    document.getElementById(btnId).onclick = () => {
+        const text = document.getElementById(textareaId).value;
+        if (!text || document.getElementById(textareaId).disabled) return;
+        
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById(btnId);
+            btn.textContent = '✅';
+            setTimeout(() => { btn.textContent = '📋'; }, 1500);
+        }).catch(err => {
+            alert('コピーに失敗した。手動で選択してコピーしてくれ。');
+        });
+    };
 };
+setupCopyButton('btn-copy-english', 'english-prompt-output');
+setupCopyButton('btn-copy-negative', 'english-negative-output');
 
 // ============================================================
 // 8. MANAGEMENT & EDIT SCREENS (個別設定のCRUD)
@@ -675,8 +682,42 @@ document.getElementById('btn-close-edit').onclick = () => showView('manage');
 // ============================================================
 // 9. GLOBAL SETTINGS
 // ============================================================
+function setupGlobalSettingsUI() {
+    const radios = document.getElementsByName('modelType');
+    const select = document.getElementById('model-select');
+    const input = document.getElementById('model-input');
+
+    // 現在のAppState.modelをもとにUIを初期化
+    let found = false;
+    for (let i = 0; i < select.options.length; i++) {
+        if (select.options[i].value === AppState.model) {
+            select.selectedIndex = i;
+            found = true; break;
+        }
+    }
+    if (found) {
+        radios[0].checked = true;
+        input.value = '';
+    } else {
+        radios[1].checked = true;
+        input.value = AppState.model || '';
+    }
+
+    const updateUI = () => {
+        const radioSel = document.querySelector('input[name="modelType"]:checked');
+        if (!radioSel) return;
+        const isSelect = radioSel.value === 'select';
+        select.disabled = !isSelect;
+        input.disabled = isSelect;
+        if (!isSelect) input.focus();
+    };
+    radios.forEach(r => r.addEventListener('change', updateUI));
+    updateUI();
+}
+
 document.getElementById('btn-global-settings').onclick = () => {
     document.getElementById('api-key-input').value = AppState.apiKey;
+    setupGlobalSettingsUI();
     showView('globalSettings');
 };
 
@@ -684,6 +725,12 @@ document.getElementById('btn-close-global-settings').onclick = () => showView('m
 
 document.getElementById('btn-save-global').onclick = () => {
     AppState.apiKey = document.getElementById('api-key-input').value.trim();
+    
+    // モデル設定の保存
+    const radioSel = document.querySelector('input[name="modelType"]:checked');
+    const isSelect = radioSel.value === 'select';
+    AppState.model = isSelect ? document.getElementById('model-select').value : document.getElementById('model-input').value.trim();
+    
     saveData();
     showView('main');
 };
