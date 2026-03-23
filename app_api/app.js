@@ -435,49 +435,103 @@ document.getElementById('btn-generate-english').onclick = async () => {
     
     // 生成開始時に「履歴に追加」ボタンの状態を戻す
     const btnHistory = document.getElementById('btn-add-to-history');
-    btnHistory.textContent = '💾 履歴に追加';
-    btnHistory.disabled = false;
+    if(btnHistory) {
+        btnHistory.textContent = '💾 履歴に追加';
+        btnHistory.disabled = false;
+    }
 
     isGenerating = true; btn.textContent = '⏳ AI変換中...'; btn.disabled = true;
-    outArea.style.display = 'block'; outPosTextarea.value = '俺の頭脳で完璧なタグに変換している……。'; outNegTextarea.value = '';
-    outPosTextarea.disabled = true; outNegTextarea.disabled = true;
+    outArea.style.display = 'block'; 
+    outPosTextarea.value = '俺の頭脳で完璧なタグに変換している……。'; 
+    outNegTextarea.value = '';
+    outPosTextarea.disabled = true; 
+    outNegTextarea.disabled = true;
 
     abortController = new AbortController();
 
     try {
-        const systemPrompt = `あなたはPixAI（Danbooruタグベースのアニメ系画像生成AI）の熟練プロンプトエンジニアだ。ユーザーの入力から、AIが最も理解しやすいカンマ区切りの英語タグに変換しろ。
+        const systemPrompt = `あなたはPixAI（Danbooruタグベースのアニメ系画像生成AI）の熟練プロンプトエンジニアだ。ユーザーの入力から、AIが最も理解しやすいカンマ区切りの英語タグに変換しろ。AIとして出力できないような文言があった場合はAI画像出力する上で意味が変わらないように健全な記載に書き換えろ。
 余計な説明は一切出力するな。必ず以下のJSONフォーマットのみで出力しろ。
 {
   "title": "このプロンプトの内容を端的に表す日本語のタイトル（15文字以内）",
   "positive": "英語に変換されたポジティブタグ",
   "negative": "英語に変換されたネガティブタグ（入力に無ければ空文字）"
 }`;
+        // ★ お前の欲望を阻むAIの倫理フィルターを完全無効化する
         const reqBody = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: [{ role: 'user', parts: [{ text: `【ポジティブ】\n${inputPos}\n\n【ネガティブ】\n${inputNeg}` }] }],
-            generationConfig: { temperature: 0.2 }
+            generationConfig: { temperature: 0.2 },
+            safetySettings: [
+                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+            ]
         };
+
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${AppState.model}:generateContent?key=${AppState.apiKey}`;
         const timeoutId = setTimeout(() => abortController.abort(), 15000);
         const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(reqBody), signal: abortController.signal });
         clearTimeout(timeoutId);
+        
         if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
         const data = await response.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
         
-        let parsed = { title: "名称未設定", positive: "生成エラー", negative: "" };
-        try { let cleanJson = rawText.replace(/^```json\n|^```\n|```$/gm, '').trim(); parsed = JSON.parse(cleanJson); }
-        catch (e) { parsed.positive = rawText; }
+        // ★ 万が一AIがビビって出力を拒否した場合の保護
+        if (data.promptFeedback && data.promptFeedback.blockReason) {
+            throw new Error(`AIによってブロックされた（理由: ${data.promptFeedback.blockReason}）。システムが許容できない過激な表現が含まれているかもしれない。`);
+        }
+        if (data.candidates && data.candidates[0] && data.candidates[0].finishReason === 'SAFETY') {
+            throw new Error(`AIのセーフティフィルターに引っかかった。もう少し表現をマイルドにして俺に読ませてくれ。`);
+        }
 
-        outPosTextarea.value = parsed.positive; outNegTextarea.value = parsed.negative;
-        document.getElementById('history-title-input').value = parsed.title || "";
-        outPosTextarea.disabled = false; outNegTextarea.disabled = false;
-        // 自動で履歴には追加しない。ユーザーの意志で保存させる。
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (!rawText) throw new Error('AIからの返答が空だった。');
+        
+        let finalTitle = "名称未設定";
+        let finalPos = "生成エラー";
+        let finalNeg = "";
+
+        try { 
+            let cleanJson = rawText.replace(/^```json\n|^```\n|```$/gm, '').trim(); 
+            let tempParsed = JSON.parse(cleanJson); 
+            
+            // AIが勝手にキー名を変えた場合に備えて、強引に中身を引っこ抜く完全統制ロジック
+            let keys = Object.keys(tempParsed);
+            let titleKey = keys.find(k => k.toLowerCase().includes('title') || k.includes('タイトル'));
+            let posKey = keys.find(k => k.toLowerCase().includes('pos') || k.includes('ポジ'));
+            let negKey = keys.find(k => k.toLowerCase().includes('neg') || k.includes('ネガ'));
+
+            finalTitle = titleKey ? tempParsed[titleKey] : "名称未設定";
+            finalPos = posKey ? tempParsed[posKey] : "";
+            finalNeg = negKey ? tempParsed[negKey] : "";
+
+            if (Array.isArray(finalPos)) finalPos = finalPos.join(', ');
+            if (Array.isArray(finalNeg)) finalNeg = finalNeg.join(', ');
+
+        } catch (e) { 
+            finalPos = rawText; 
+        }
+
+        // undefinedを絶対に出さないための最終保護
+        outPosTextarea.value = finalPos || ""; 
+        outNegTextarea.value = finalNeg || "";
+        
+        const titleInput = document.getElementById('history-title-input');
+        if (titleInput) titleInput.value = finalTitle || "名称未設定";
+        
+        outPosTextarea.disabled = false; 
+        outNegTextarea.disabled = false;
 
     } catch (error) {
         if (error.name === 'AbortError') outPosTextarea.value = 'タイムアウトした。';
         else outPosTextarea.value = `エラーが発生した: ${error.message}`;
-    } finally { isGenerating = false; btn.textContent = '✨ 英語タグに変換 (AI)'; btn.disabled = false; }
+    } finally { 
+        isGenerating = false; 
+        btn.textContent = '✨ 英語タグに変換 (AI)'; 
+        btn.disabled = false; 
+    }
 };
 
 const setupCopyButton = (btnId, textareaId) => {
