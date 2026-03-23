@@ -185,6 +185,41 @@ function initMainScreen() {
 
     // ★「履歴に追加」ボタンのイベントリスナー★
     document.getElementById('btn-add-to-history').onclick = addToHistory;
+
+    // ★作業用メモ用のイベントリスナー★
+    initMemoArea();
+}
+
+// ★作業用メモの初期化ロジック★
+function initMemoArea() {
+    const memoInput = document.getElementById('memo-input');
+    const btnCopy = document.getElementById('btn-copy-memo');
+    const btnReset = document.getElementById('btn-reset-memo');
+
+    if (!memoInput || !btnCopy || !btnReset) return;
+
+    // コピー機能
+    btnCopy.onclick = () => {
+        const text = memoInput.value;
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = btnCopy.textContent;
+            btnCopy.textContent = '✅ コピーした';
+            btnCopy.style.color = 'var(--accent-color)';
+            setTimeout(() => {
+                btnCopy.textContent = originalText;
+                btnCopy.style.color = '';
+            }, 1500);
+        });
+    };
+
+    // リセット機能 (確認ダイアログ付き)
+    btnReset.onclick = () => {
+        if (memoInput.value && confirm('作業用フィールドの内容をリセットしていいか？')) {
+            memoInput.value = '';
+            sysLog('作業用メモをリセットした。');
+        }
+    };
 }
 
 // ★「履歴に追加」関数★

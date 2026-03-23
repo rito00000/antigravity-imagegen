@@ -12,7 +12,7 @@
         <div id="main-view" class="view active">
             <header class="app-header">
                 <div class="header-left">
-                    <h1>✨ プロンプトメーカー v20260323</h1>
+                    <h1>✨ プロンプトメーカー v20260323_r2</h1>
                 </div>
                 <div class="header-right">
                     <button id="btn-global-settings" class="icon-btn" title="全体設定">⚙️</button>
@@ -48,6 +48,16 @@
                 <div style="display: flex; gap: 8px; margin-top: 12px;">
                     <button id="btn-reset-prompt" class="secondary-btn" style="flex: 1;">リセット</button>
                     <button id="btn-generate-english" class="primary-btn" style="flex: 2;">✨ 英語タグに変換 (AI)</button>
+                </div>
+
+                <!-- ★作業用テキストフィールド (作業用メモ) ★ -->
+                <div id="memo-area" style="margin-top: 24px;">
+                    <label>作業用テキストフィールド (内容保持)</label>
+                    <textarea id="memo-input" rows="5" placeholder="自由に入力・編集ができる作業場だ。画面を切り替えても内容は残るぞ。"></textarea>
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <button id="btn-copy-memo" class="secondary-btn" style="flex: 1;">📋 コピー</button>
+                        <button id="btn-reset-memo" class="secondary-btn" style="flex: 1; color: var(--danger-color);">♻️ 内容リセット</button>
+                    </div>
                 </div>
 
                 <div id="english-output-area" style="display: none; margin-top: 24px;">
