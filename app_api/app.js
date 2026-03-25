@@ -371,7 +371,7 @@ function updateCombinedPromptPreview() {
 
     let posResult = '';
     if (commonPos.length > 0) {
-        posResult += `#共通設定\n${commonPos.join(', ')}\n\n`;
+        posResult += ` \n${commonPos.join(', ')}\n\n`;
     }
 
     // キャラごとの設定
@@ -388,7 +388,7 @@ function updateCombinedPromptPreview() {
         }
         
         if (charPos.length > 0) {
-            posResult += `#${index + 1}人目\n${charPos.join(', ')} , BREAK, \n\n`;
+            posResult += `#character${index + 1}\n${charPos.join(', ')} , BREAK, \n\n`;
         }
     });
 
