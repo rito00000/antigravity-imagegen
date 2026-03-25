@@ -40,10 +40,16 @@
                 <button id="btn-add-char" class="secondary-btn full-width margin-top">＋ キャラを追加</button>
 
                 <label style="margin-top: 24px;">構築されたプロンプト (ポジティブ / 編集可能)</label>
-                <textarea id="combined-prompt-preview" rows="5" placeholder="ポジティブな設定がここに結合されます..."></textarea>
+                <div class="prompt-output-box">
+                    <textarea id="combined-prompt-preview" rows="5" placeholder="ポジティブな設定がここに結合されます..." style="background: transparent; border: none; outline: none; resize: vertical; color: inherit; font-family: inherit;"></textarea>
+                    <button id="btn-copy-combined-pos" class="icon-btn copy-btn" title="コピー">📋</button>
+                </div>
 
                 <label style="margin-top: 16px;">構築されたプロンプト (ネガティブ / 編集可能)</label>
-                <textarea id="combined-negative-preview" rows="3" placeholder="ネガティブな設定がここに結合されます..."></textarea>
+                <div class="prompt-output-box">
+                    <textarea id="combined-negative-preview" rows="3" placeholder="ネガティブな設定がここに結合されます..." style="background: transparent; border: none; outline: none; resize: vertical; color: inherit; font-family: inherit;"></textarea>
+                    <button id="btn-copy-combined-neg" class="icon-btn copy-btn" title="コピー">📋</button>
+                </div>
 
                 <div style="display: flex; gap: 8px; margin-top: 12px;">
                     <button id="btn-reset-prompt" class="secondary-btn" style="flex: 1;">リセット</button>

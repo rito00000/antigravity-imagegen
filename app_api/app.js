@@ -592,6 +592,8 @@ const setupCopyButton = (btnId, textareaId) => {
 };
 setupCopyButton('btn-copy-english', 'english-prompt-output');
 setupCopyButton('btn-copy-negative', 'english-negative-output');
+setupCopyButton('btn-copy-combined-pos', 'combined-prompt-preview');
+setupCopyButton('btn-copy-combined-neg', 'combined-negative-preview');
 
 // ============================================================
 // 8. MANAGEMENT & EDIT SCREENS (CRUD)
